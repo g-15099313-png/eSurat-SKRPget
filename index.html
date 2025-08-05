@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pengurusan Surat - Daftar</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-envelope"></i> Sistem Pengurusan Surat</h1>
+            <p>Daftar Surat Masuk & Keluar</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('surat-masuk')">
+                <i class="fas fa-inbox"></i> Surat Masuk
+            </button>
+            <button class="tab-btn" onclick="showTab('surat-keluar')">
+                <i class="fas fa-paper-plane"></i> Surat Keluar
+            </button>
+        </div>
+
+        <!-- Form Surat Masuk -->
+        <div id="surat-masuk" class="tab-content active">
+            <form id="form-surat-masuk" class="form">
+                <div class="form-group">
+                    <label for="no-rujukan-masuk">No. Rujukan:</label>
+                    <input type="text" id="no-rujukan-masuk" name="noRujukan" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tarikh-terima">Tarikh Terima:</label>
+                    <input type="date" id="tarikh-terima" name="tarikhTerima" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="pengirim">Pengirim:</label>
+                    <input type="text" id="pengirim" name="pengirim" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="subjek-masuk">Subjek:</label>
+                    <textarea id="subjek-masuk" name="subjek" rows="3" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="status-masuk">Status:</label>
+                    <select id="status-masuk" name="status" required>
+                        <option value="">Pilih Status</option>
+                        <option value="Baru">Baru</option>
+                        <option value="Dalam Proses">Dalam Proses</option>
+                        <option value="Selesai">Selesai</option>
+                        <option value="Tidak Berkenaan">Tidak Berkenaan</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="tindakan-siapa-masuk">Tindakan Siapa:</label>
+                    <input type="text" id="tindakan-siapa-masuk" name="tindakanSiapa" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="muat-naik-surat-masuk">Muat Naik Surat:</label>
+                    <input type="file" id="muat-naik-surat-masuk" name="muatNaikSurat" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                </div>
+
+                <div class="form-group">
+                    <label for="tindakan-masuk">Tindakan:</label>
+                    <textarea id="tindakan-masuk" name="tindakan" rows="3" placeholder="Catatan tindakan yang diambil..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Simpan Surat Masuk
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm('form-surat-masuk')">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Form Surat Keluar -->
+        <div id="surat-keluar" class="tab-content">
+            <form id="form-surat-keluar" class="form">
+                <div class="form-group">
+                    <label for="no-rujukan-keluar">No. Rujukan:</label>
+                    <input type="text" id="no-rujukan-keluar" name="noRujukan" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tarikh-hantar">Tarikh Hantar:</label>
+                    <input type="date" id="tarikh-hantar" name="tarikhHantar" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="penerima">Penerima:</label>
+                    <input type="text" id="penerima" name="penerima" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="subjek-keluar">Subjek:</label>
+                    <textarea id="subjek-keluar" name="subjek" rows="3" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="status-keluar">Status:</label>
+                    <select id="status-keluar" name="status" required>
+                        <option value="">Pilih Status</option>
+                        <option value="Draf">Draf</option>
+                        <option value="Telah Dihantar">Telah Dihantar</option>
+                        <option value="Telah Diterima">Telah Diterima</option>
+                        <option value="Batal">Batal</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="tindakan-siapa-keluar">Tindakan Siapa:</label>
+                    <input type="text" id="tindakan-siapa-keluar" name="tindakanSiapa" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="muat-naik-surat-keluar">Muat Naik Surat:</label>
+                    <input type="file" id="muat-naik-surat-keluar" name="muatNaikSurat" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                </div>
+
+                <div class="form-group">
+                    <label for="tindakan-keluar">Tindakan:</label>
+                    <textarea id="tindakan-keluar" name="tindakan" rows="3" placeholder="Catatan tindakan yang diambil..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Simpan Surat Keluar
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm('form-surat-keluar')">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Senarai Surat -->
+        <div class="records-section">
+            <h2><i class="fas fa-list"></i> Senarai Surat</h2>
+            <div class="search-filter">
+                <input type="text" id="search-input" placeholder="Cari surat..." onkeyup="filterRecords()">
+                <select id="status-filter" onchange="filterRecords()">
+                    <option value="">Semua Status</option>
+                    <option value="Baru">Baru</option>
+                    <option value="Dalam Proses">Dalam Proses</option>
+                    <option value="Selesai">Selesai</option>
+                    <option value="Draf">Draf</option>
+                    <option value="Telah Dihantar">Telah Dihantar</option>
+                </select>
+            </div>
+            <div id="records-container" class="records-container">
+                <!-- Records will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal untuk paparan butiran -->
+    <div id="record-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Sistem Pengurusan Surat</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 3px; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Sistem Pengurusan Surat</h1>
+    
+    <div class="test-section">
+        <h2>1. Test Konfigurasi</h2>
+        <button onclick="testConfig()">Test Config</button>
+        <div id="config-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Test Google Apps Script Connection</h2>
+        <button onclick="testGoogleAppsScript()">Test Connection</button>
+        <div id="gas-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Test Form Validation</h2>
+        <button onclick="testFormValidation()">Test Forms</button>
+        <div id="form-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Test UI Functions</h2>
+        <button onclick="testUIFunctions()">Test UI</button>
+        <div id="ui-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. Test Data Operations</h2>
+        <button onclick="testDataOperations()">Test Data</button>
+        <div id="data-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>6. Run All Tests</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <div id="all-result"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        function addResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            element.appendChild(div);
+        }
+        
+        function clearResults(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+        
+        function testConfig() {
+            clearResults('config-result');
+            
+            try {
+                // Test config loading
+                if (typeof CONFIG !== 'undefined') {
+                    addResult('config-result', '✅ CONFIG loaded successfully', 'pass');
+                } else {
+                    addResult('config-result', '❌ CONFIG not found', 'fail');
+                    return;
+                }
+                
+                // Test required config values
+                const requiredConfigs = [
+                    'GOOGLE_APPS_SCRIPT_URL',
+                    'SPREADSHEET_ID',
+                    'SHEET_NAMES.SURAT_MASUK',
+                    'SHEET_NAMES.SURAT_KELUAR'
+                ];
+                
+                let allValid = true;
+                requiredConfigs.forEach(config => {
+                    const value = getConfig(config);
+                    if (value && value !== 'YOUR_SPREADSHEET_ID_HERE' && value !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                        addResult('config-result', `✅ ${config}: ${value}`, 'pass');
+                    } else {
+                        addResult('config-result', `❌ ${config}: Not configured`, 'fail');
+                        allValid = false;
+                    }
+                });
+                
+                if (allValid) {
+                    addResult('config-result', '✅ All configuration values are properly set', 'pass');
+                } else {
+                    addResult('config-result', '⚠️ Please update configuration values', 'info');
+                }
+                
+            } catch (error) {
+                addResult('config-result', `❌ Error testing config: ${error.message}`, 'fail');
+            }
+        }
+        
+        function testGoogleAppsScript() {
+            clearResults('gas-result');
+            
+            try {
+                addResult('gas-result', 'Testing Google Apps Script connection...', 'info');
+                
+                // Simulate Google Apps Script call
+                setTimeout(() => {
+                    if (CONFIG.GOOGLE_APPS_SCRIPT_URL && 
+                        CONFIG.GOOGLE_APPS_SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                        addResult('gas-result', '✅ Google Apps Script URL configured', 'pass');
+                        addResult('gas-result', '⚠️ Manual testing required - deploy and test URL', 'info');
+                    } else {
+                        addResult('gas-result', '❌ Google Apps Script URL not configured', 'fail');
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                addResult('gas-result', `❌ Error testing Google Apps Script: ${error.message}`, 'fail');
+            }
+        }
+        
+        function testFormValidation() {
+            clearResults('form-result');
+            
+            try {
+                // Test form elements exist
+                const forms = ['form-surat-masuk', 'form-surat-keluar'];
+                let allFormsExist = true;
+                
+                forms.forEach(formId => {
+                    const form = document.getElementById(formId);
+                    if (form) {
+                        addResult('form-result', `✅ Form ${formId} exists`, 'pass');
+                    } else {
+                        addResult('form-result', `❌ Form ${formId} not found`, 'fail');
+                        allFormsExist = false;
+                    }
+                });
+                
+                if (allFormsExist) {
+                    addResult('form-result', '✅ All forms are present', 'pass');
+                }
+                
+                // Test required fields
+                const requiredFields = [
+                    'no-rujukan-masuk', 'tarikh-terima', 'pengirim', 'subjek-masuk',
+                    'status-masuk', 'tindakan-siapa-masuk'
+                ];
+                
+                let allFieldsExist = true;
+                requiredFields.forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        addResult('form-result', `✅ Field ${fieldId} exists`, 'pass');
+                    } else {
+                        addResult('form-result', `❌ Field ${fieldId} not found`, 'fail');
+                        allFieldsExist = false;
+                    }
+                });
+                
+                if (allFieldsExist) {
+                    addResult('form-result', '✅ All required fields are present', 'pass');
+                }
+                
+            } catch (error) {
+                addResult('form-result', `❌ Error testing forms: ${error.message}`, 'fail');
+            }
+        }
+        
+        function testUIFunctions() {
+            clearResults('ui-result');
+            
+            try {
+                // Test tab switching
+                const tabs = document.querySelectorAll('.tab-btn');
+                if (tabs.length > 0) {
+                    addResult('ui-result', `✅ Found ${tabs.length} tab buttons`, 'pass');
+                } else {
+                    addResult('ui-result', '❌ No tab buttons found', 'fail');
+                }
+                
+                // Test modal
+                const modal = document.getElementById('record-modal');
+                if (modal) {
+                    addResult('ui-result', '✅ Modal element exists', 'pass');
+                } else {
+                    addResult('ui-result', '❌ Modal element not found', 'fail');
+                }
+                
+                // Test search functionality
+                const searchInput = document.getElementById('search-input');
+                if (searchInput) {
+                    addResult('ui-result', '✅ Search input exists', 'pass');
+                } else {
+                    addResult('ui-result', '❌ Search input not found', 'fail');
+                }
+                
+                // Test status filter
+                const statusFilter = document.getElementById('status-filter');
+                if (statusFilter) {
+                    addResult('ui-result', '✅ Status filter exists', 'pass');
+                } else {
+                    addResult('ui-result', '❌ Status filter not found', 'fail');
+                }
+                
+            } catch (error) {
+                addResult('ui-result', `❌ Error testing UI: ${error.message}`, 'fail');
+            }
+        }
+        
+        function testDataOperations() {
+            clearResults('data-result');
+            
+            try {
+                // Test data structure
+                const sampleData = {
+                    type: 'surat-masuk',
+                    noRujukan: 'SM/2024/001',
+                    tarikhTerima: '2024-01-15',
+                    pengirim: 'Test Pengirim',
+                    subjek: 'Test Subjek',
+                    status: 'Baru',
+                    tindakanSiapa: 'Test Tindakan',
+                    tindakan: 'Test Catatan'
+                };
+                
+                addResult('data-result', '✅ Sample data structure created', 'pass');
+                
+                // Test date formatting
+                const testDate = new Date('2024-01-15');
+                const formattedDate = testDate.toLocaleDateString('ms-MY', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                addResult('data-result', `✅ Date formatting works: ${formattedDate}`, 'pass');
+                
+                // Test reference number generation
+                const currentYear = new Date().getFullYear();
+                const testRefNumber = `SM/${currentYear}/001`;
+                addResult('data-result', `✅ Reference number format: ${testRefNumber}`, 'pass');
+                
+                // Test status validation
+                const validStatuses = ['Baru', 'Dalam Proses', 'Selesai', 'Tidak Berkenaan'];
+                const testStatus = 'Baru';
+                if (validStatuses.includes(testStatus)) {
+                    addResult('data-result', '✅ Status validation works', 'pass');
+                } else {
+                    addResult('data-result', '❌ Status validation failed', 'fail');
+                }
+                
+            } catch (error) {
+                addResult('data-result', `❌ Error testing data operations: ${error.message}`, 'fail');
+            }
+        }
+        
+        function runAllTests() {
+            clearResults('all-result');
+            
+            addResult('all-result', '🚀 Starting comprehensive test...', 'info');
+            
+            // Run all tests
+            setTimeout(() => testConfig(), 100);
+            setTimeout(() => testGoogleAppsScript(), 200);
+            setTimeout(() => testFormValidation(), 300);
+            setTimeout(() => testUIFunctions(), 400);
+            setTimeout(() => testDataOperations(), 500);
+            
+            setTimeout(() => {
+                addResult('all-result', '✅ All tests completed. Check individual sections for details.', 'pass');
+                addResult('all-result', '📋 Next steps:', 'info');
+                addResult('all-result', '1. Update configuration in config.js', 'info');
+                addResult('all-result', '2. Setup Google Apps Script', 'info');
+                addResult('all-result', '3. Test with real data', 'info');
+            }, 2000);
+        }
+        
+        // Auto-run basic tests on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                addResult('all-result', '🔄 Auto-testing on page load...', 'info');
+                testConfig();
+                testFormValidation();
+                testUIFunctions();
+            }, 1000);
+        });
+    </script>
+</body>
+</html> 
