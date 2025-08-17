@@ -1,249 +1,237 @@
-// Konfigurasi Aplikasi Sistem Pengurusan Surat
-// Sila ubah nilai-nilai ini mengikut keperluan anda
+// Konfigurasi Aplikasi EDAFTAR SURAT SKRP GET
+// Ganti nilai-nilai ini dengan maklumat anda sendiri
 
 const CONFIG = {
-    // Google Apps Script URL
-    // Ganti dengan URL deployment Google Apps Script anda
-    GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwUdKkyEOHHUjKLJ9pmDc7oi3rTv8R0Ppr1M7kSQMKCLqmvS6xAUHPjfxLOEodAz3h0/exec',
+    // Google Apps Script Web App URL
+    // Ganti dengan URL yang anda dapat selepas deploy Google Apps Script
+    GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbynhC3BmxyDbhxUgHnd3xQzF8LgNxii6Nh06bCwekon13gt5YFb9WLoYQJ0t8Zva5dtcA/exec',
     
-    // Google Sheets ID
-    // Ganti dengan ID spreadsheet Google Sheets anda
-    SPREADSHEET_ID: '1wVBuM7wP3HPzqskSDlgBiT2r0f4Wq8',
-    
-    // Nama Sheet
-    SHEET_NAMES: {
-        SURAT_MASUK: 'Surat_Masuk',
-        SURAT_KELUAR: 'Surat_Keluar'
+    // Maklumat Sekolah
+    SCHOOL_INFO: {
+        name: 'SEKOLAH KEBANGSAAN RANTAU PANJANG',
+        address: '17200 RANTAU PANJANG,KELANTAN',
+        phone: '09-7950258',
+        email: 'dba3227@moe.edu.my',
+        website: 'https://bit.ly/skrpget'
     },
     
-    // Konfigurasi Aplikasi
-    APP: {
-        NAME: 'Sistem Pengurusan Surat - Daftar',
-        VERSION: '1.0.0',
-        DEBUG_MODE: false,
-        AUTO_SAVE: true,
-        AUTO_REFRESH: true,
-        REFRESH_INTERVAL: 30000 // 30 saat
-    },
-    
-    // Konfigurasi Status
-    STATUS: {
-        SURAT_MASUK: [
-            'Baru',
-            'Dalam Proses',
-            'Selesai',
-            'Tidak Berkenaan'
-        ],
-        SURAT_KELUAR: [
-            'Draf',
-            'Telah Dihantar',
-            'Telah Diterima',
-            'Batal'
-        ]
-    },
-    
-    // Konfigurasi Penomboran
-    REFERENCE_NUMBER: {
-        SURAT_MASUK_PREFIX: 'SM',
-        SURAT_KELUAR_PREFIX: 'SK',
-        YEAR_FORMAT: 'YYYY',
-        NUMBER_FORMAT: '000'
-    },
-    
-    // Konfigurasi Email
-    EMAIL: {
-        ENABLED: true,
-        RECIPIENT: 'admin@example.com',
-        SUBJECT_PREFIX: '[Sistem Surat]',
-        NOTIFICATION_TYPES: ['new_record', 'status_update', 'daily_summary']
-    },
-    
-    // Konfigurasi File Upload
-    FILE_UPLOAD: {
-        MAX_SIZE: 10 * 1024 * 1024, // 10MB
-        ALLOWED_TYPES: ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'],
-        AUTO_RENAME: true,
-        STORAGE_TYPE: 'google_drive' // 'google_drive' atau 'local'
-    },
-    
-    // Konfigurasi UI
-    UI: {
-        THEME: 'default', // 'default', 'dark', 'light'
-        LANGUAGE: 'ms', // 'ms', 'en'
-        ANIMATIONS: true,
-        SOUND_NOTIFICATIONS: false,
-        AUTO_COMPLETE: true
-    },
-    
-    // Konfigurasi Pencarian
-    SEARCH: {
-        MIN_CHARACTERS: 2,
-        SEARCH_DELAY: 500, // ms
-        HIGHLIGHT_RESULTS: true,
-        SEARCH_FIELDS: ['noRujukan', 'subjek', 'pengirim', 'penerima', 'tindakanSiapa']
-    },
-    
-    // Konfigurasi Export
-    EXPORT: {
-        PDF_ENABLED: true,
-        EXCEL_ENABLED: true,
-        CSV_ENABLED: true,
-        DEFAULT_FORMAT: 'pdf'
-    },
-    
-    // Konfigurasi Backup
-    BACKUP: {
-        AUTO_BACKUP: true,
-        BACKUP_INTERVAL: 24 * 60 * 60 * 1000, // 24 jam
-        KEEP_BACKUPS: 30, // hari
-        BACKUP_LOCATION: 'google_drive'
-    },
-    
-    // Konfigurasi Keselamatan
-    SECURITY: {
-        SESSION_TIMEOUT: 30 * 60 * 1000, // 30 minit
-        MAX_LOGIN_ATTEMPTS: 5,
-        PASSWORD_REQUIREMENTS: {
-            MIN_LENGTH: 8,
-            REQUIRE_UPPERCASE: true,
-            REQUIRE_LOWERCASE: true,
-            REQUIRE_NUMBERS: true,
-            REQUIRE_SPECIAL_CHARS: true
+    // Konfigurasi Pengguna
+    USERS: {
+        'Guru Besar': {
+            icon: 'fas fa-user-tie',
+            permissions: ['add', 'update', 'delete', 'view', 'upload'],
+            color: '#667eea'
+        },
+        'GPKP': {
+            icon: 'fas fa-user-graduate',
+            permissions: ['add', 'update', 'view', 'upload'],
+            color: '#74b9ff'
+        },
+        'GPKHEM': {
+            icon: 'fas fa-user-cog',
+            permissions: ['add', 'update', 'view', 'upload'],
+            color: '#00b894'
+        },
+        'GPKKO': {
+            icon: 'fas fa-user-shield',
+            permissions: ['add', 'update', 'view', 'upload'],
+            color: '#fdcb6e'
+        },
+        'PT': {
+            icon: 'fas fa-user',
+            permissions: ['add', 'view', 'upload'],
+            color: '#a29bfe'
+        },
+        'PO': {
+            icon: 'fas fa-user-friends',
+            permissions: ['view', 'upload'],
+            color: '#fd79a8'
         }
     },
     
+    // Status Surat Masuk
+    SURAT_MASUK_STATUS: [
+        { value: 'Baru', label: 'Baru', color: '#ffeaa7', textColor: '#d63031' },
+        { value: 'Dalam Proses', label: 'Dalam Proses', color: '#74b9ff', textColor: 'white' },
+        { value: 'Selesai', label: 'Selesai', color: '#00b894', textColor: 'white' },
+        { value: 'Tolak', label: 'Tolak', color: '#fd79a8', textColor: 'white' }
+    ],
+    
+    // Status Surat Keluar
+    SURAT_KELUAR_STATUS: [
+        { value: 'Draf', label: 'Draf', color: '#a29bfe', textColor: 'white' },
+        { value: 'Hantar', label: 'Hantar', color: '#fdcb6e', textColor: '#2d3436' },
+        { value: 'Selesai', label: 'Selesai', color: '#00b894', textColor: 'white' }
+    ],
+    
+    // Konfigurasi Fail
+    FILE_CONFIG: {
+        maxSize: 5 * 1024 * 1024, // 5MB
+        allowedTypes: [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ],
+        allowedExtensions: ['.pdf', '.doc', '.docx']
+    },
+    
+    // Konfigurasi Antara Muka
+    UI_CONFIG: {
+        itemsPerPage: 10,
+        autoRefreshInterval: 30000, // 30 saat
+        notificationDuration: 3000, // 3 saat
+        dateFormat: 'dd/MM/yyyy',
+        timeFormat: 'HH:mm:ss'
+    },
+    
+    // Konfigurasi API
+    API_CONFIG: {
+        timeout: 30000, // 30 saat
+        retryAttempts: 3,
+        retryDelay: 1000 // 1 saat
+    },
+    
+    // Konfigurasi Keselamatan
+    SECURITY_CONFIG: {
+        sessionTimeout: 30 * 60 * 1000, // 30 minit
+        maxLoginAttempts: 3,
+        lockoutDuration: 15 * 60 * 1000 // 15 minit
+    },
+    
+    // Konfigurasi Backup
+    BACKUP_CONFIG: {
+        autoBackup: true,
+        backupInterval: 24 * 60 * 60 * 1000, // 24 jam
+        keepBackups: 7 // Simpan 7 backup terakhir
+    },
+    
+    // Konfigurasi Email
+    EMAIL_CONFIG: {
+        enabled: false,
+        smtpServer: 'smtp.gmail.com',
+        smtpPort: 587,
+        fromEmail: 'noreply@skrpget.edu.my',
+        fromName: 'EDAFTAR SURAT SKRP GET'
+    },
+    
     // Konfigurasi Laporan
-    REPORTS: {
-        DAILY_SUMMARY: true,
-        WEEKLY_REPORT: true,
-        MONTHLY_REPORT: true,
-        AUTO_GENERATE: true,
-        EMAIL_REPORTS: true
-    },
-    
-    // Konfigurasi Notifikasi
-    NOTIFICATIONS: {
-        BROWSER_NOTIFICATIONS: true,
-        SOUND_NOTIFICATIONS: false,
-        EMAIL_NOTIFICATIONS: true,
-        PUSH_NOTIFICATIONS: false
-    },
-    
-    // Konfigurasi Performance
-    PERFORMANCE: {
-        CACHE_ENABLED: true,
-        CACHE_DURATION: 5 * 60 * 1000, // 5 minit
-        LAZY_LOADING: true,
-        IMAGE_OPTIMIZATION: true
+    REPORT_CONFIG: {
+        defaultPeriod: 'month',
+        exportFormats: ['pdf', 'excel', 'csv'],
+        includeCharts: true,
+        autoGenerate: false
     }
 };
 
 // Fungsi untuk mendapatkan konfigurasi
 function getConfig(key) {
-    const keys = key.split('.');
-    let value = CONFIG;
+    return key.split('.').reduce((obj, k) => obj && obj[k], CONFIG);
+}
+
+// Fungsi untuk mengesahkan konfigurasi
+function validateConfig() {
+    const requiredFields = [
+        'GOOGLE_APPS_SCRIPT_URL'
+    ];
     
-    for (const k of keys) {
-        if (value && typeof value === 'object' && k in value) {
-            value = value[k];
-        } else {
-            return null;
+    const errors = [];
+    
+    requiredFields.forEach(field => {
+        if (!CONFIG[field] || CONFIG[field] === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL') {
+            errors.push(`Sila isi ${field} dalam config.js`);
         }
-    }
-    
-    return value;
-}
-
-// Fungsi untuk mengemas kini konfigurasi
-function updateConfig(key, value) {
-    const keys = key.split('.');
-    let config = CONFIG;
-    
-    for (let i = 0; i < keys.length - 1; i++) {
-        if (!(keys[i] in config)) {
-            config[keys[i]] = {};
-        }
-        config = config[keys[i]];
-    }
-    
-    config[keys[keys.length - 1]] = value;
-    
-    // Simpan ke localStorage
-    localStorage.setItem('surat_config', JSON.stringify(CONFIG));
-}
-
-// Fungsi untuk memuat konfigurasi dari localStorage
-function loadConfig() {
-    const savedConfig = localStorage.getItem('surat_config');
-    if (savedConfig) {
-        try {
-            const parsed = JSON.parse(savedConfig);
-            Object.assign(CONFIG, parsed);
-        } catch (error) {
-            console.error('Error loading config:', error);
-        }
-    }
-}
-
-// Fungsi untuk reset konfigurasi
-function resetConfig() {
-    localStorage.removeItem('surat_config');
-    location.reload();
-}
-
-// Fungsi untuk export konfigurasi
-function exportConfig() {
-    const configBlob = new Blob([JSON.stringify(CONFIG, null, 2)], {
-        type: 'application/json'
     });
     
-    const url = URL.createObjectURL(configBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'surat_config.json';
-    a.click();
-    URL.revokeObjectURL(url);
+    if (errors.length > 0) {
+        console.error('Konfigurasi tidak lengkap:', errors);
+        return false;
+    }
+    
+    return true;
 }
 
-// Fungsi untuk import konfigurasi
-function importConfig(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const config = JSON.parse(e.target.result);
-                Object.assign(CONFIG, config);
-                localStorage.setItem('surat_config', JSON.stringify(CONFIG));
-                resolve(config);
-            } catch (error) {
-                reject(error);
-            }
+// Fungsi untuk mendapatkan kebenaran pengguna
+function getUserPermissions(user) {
+    const userConfig = CONFIG.USERS[user];
+    return userConfig ? userConfig.permissions : [];
+}
+
+// Fungsi untuk mengesahkan kebenaran
+function hasPermission(user, action) {
+    const permissions = getUserPermissions(user);
+    return permissions.includes(action);
+}
+
+// Fungsi untuk mendapatkan status config
+function getStatusConfig(suratType, status) {
+    const statusList = suratType === 'surat-masuk' ? 
+        CONFIG.SURAT_MASUK_STATUS : 
+        CONFIG.SURAT_KELUAR_STATUS;
+    
+    return statusList.find(s => s.value === status) || statusList[0];
+}
+
+// Fungsi untuk mengesahkan fail
+function validateFile(file) {
+    const config = CONFIG.FILE_CONFIG;
+    
+    // Periksa saiz
+    if (file.size > config.maxSize) {
+        return {
+            valid: false,
+            message: `Saiz fail tidak boleh melebihi ${config.maxSize / (1024 * 1024)}MB`
         };
-        reader.readAsText(file);
-    });
+    }
+    
+    // Periksa jenis fail
+    if (!config.allowedTypes.includes(file.type)) {
+        return {
+            valid: false,
+            message: `Jenis fail tidak dibenarkan. Hanya ${config.allowedExtensions.join(', ')} yang dibenarkan`
+        };
+    }
+    
+    return { valid: true };
 }
 
-// Muat konfigurasi pada startup
-loadConfig();
-
-// Export untuk kegunaan global
-if (typeof window !== 'undefined') {
-    window.CONFIG = CONFIG;
-    window.getConfig = getConfig;
-    window.updateConfig = updateConfig;
-    window.resetConfig = resetConfig;
-    window.exportConfig = exportConfig;
-    window.importConfig = importConfig;
+// Fungsi untuk format tarikh
+function formatDate(date, format = CONFIG.UI_CONFIG.dateFormat) {
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    
+    return format
+        .replace('dd', day)
+        .replace('MM', month)
+        .replace('yyyy', year);
 }
 
-// Export untuk Node.js
+// Fungsi untuk format masa
+function formatTime(date, format = CONFIG.UI_CONFIG.timeFormat) {
+    const d = new Date(date);
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    
+    return format
+        .replace('HH', hours)
+        .replace('mm', minutes)
+        .replace('ss', seconds);
+}
+
+// Export untuk kegunaan dalam fail lain
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         CONFIG,
         getConfig,
-        updateConfig,
-        resetConfig,
-        exportConfig,
-        importConfig
+        validateConfig,
+        getUserPermissions,
+        hasPermission,
+        getStatusConfig,
+        validateFile,
+        formatDate,
+        formatTime
     };
-} 
+}
+

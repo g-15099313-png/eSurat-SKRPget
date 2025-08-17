@@ -1,467 +1,717 @@
-// Global variables
-let currentRecords = [];
+// Global Variables
+let currentUser = 'Guru Besar';
 let currentTab = 'surat-masuk';
+let suratMasukData = [];
+let suratKeluarData = [];
+let editingSuratId = null;
+
+// Google Apps Script Integration
+const GOOGLE_APPS_SCRIPT_URL = CONFIG.GOOGLE_APPS_SCRIPT_URL;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
+    // Validate configuration first
+    if (!validateConfig()) {
+        showNotification('Konfigurasi tidak lengkap. Sila periksa config.js', 'error');
+        return;
+    }
+    
     initializeApp();
-    loadRecords();
+    loadSampleData();
 });
 
-// Initialize application
 function initializeApp() {
-    // Set current date for date inputs
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('tarikh-terima').value = today;
-    document.getElementById('tarikh-hantar').value = today;
-    
-    // Add form event listeners
-    document.getElementById('form-surat-masuk').addEventListener('submit', handleSuratMasukSubmit);
-    document.getElementById('form-surat-keluar').addEventListener('submit', handleSuratKeluarSubmit);
-    
-    // Add modal event listeners
-    const modal = document.getElementById('record-modal');
-    const closeBtn = document.querySelector('.close');
-    
-    closeBtn.onclick = function() {
-        modal.style.display = "none";
-    }
-    
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = "none";
+    // User selection
+    document.querySelectorAll('.user-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentUser = this.dataset.user;
+            updateCurrentUser();
+            updateUserButtons();
+            loadData();
+        });
+    });
+
+    // Tab navigation
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentTab = this.dataset.tab;
+            updateTabs();
+            loadData();
+        });
+    });
+
+    // Add surat buttons
+    document.getElementById('addSuratMasukBtn').addEventListener('click', () => openSuratModal('surat-masuk'));
+    document.getElementById('addSuratKeluarBtn').addEventListener('click', () => openSuratModal('surat-keluar'));
+
+    // Search and filter
+    document.getElementById('searchSuratMasuk').addEventListener('input', filterSuratMasuk);
+    document.getElementById('searchSuratKeluar').addEventListener('input', filterSuratKeluar);
+    document.getElementById('filterStatusSuratMasuk').addEventListener('change', filterSuratMasuk);
+    document.getElementById('filterStatusSuratKeluar').addEventListener('change', filterSuratKeluar);
+
+    // Modal events
+    document.getElementById('suratForm').addEventListener('submit', handleSuratSubmit);
+    document.querySelector('.close').addEventListener('click', closeModal);
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    // Upload modal events
+    document.getElementById('uploadArea').addEventListener('click', () => document.getElementById('fileInput').click());
+    document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+    document.getElementById('uploadArea').addEventListener('dragover', handleDragOver);
+    document.getElementById('uploadArea').addEventListener('drop', handleDrop);
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal')) {
+            closeModal();
+            closeUploadModal();
         }
+    });
+}
+
+// User Management
+function updateCurrentUser() {
+    document.getElementById('currentUser').textContent = currentUser;
+}
+
+function updateUserButtons() {
+    document.querySelectorAll('.user-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.user === currentUser) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+// Tab Management
+function updateTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.tab === currentTab) {
+            btn.classList.add('active');
+        }
+    });
+
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+        if (content.id === currentTab) {
+            content.classList.add('active');
+        }
+    });
+}
+
+// Data Management
+function loadSampleData() {
+    // Sample data for Surat Masuk
+    suratMasukData = [
+        {
+            id: 1,
+            noRujukan: 'SKRP/2024/001',
+            tarikhTerima: '2024-01-15',
+            pengirim: 'Jabatan Pendidikan Negeri',
+            subjek: 'Pekeliling Pengurusan Sekolah 2024',
+            status: 'Baru',
+            tindakanSiapa: 'Guru Besar',
+            failSurat: null
+        },
+        {
+            id: 2,
+            noRujukan: 'SKRP/2024/002',
+            tarikhTerima: '2024-01-16',
+            pengirim: 'Pejabat Pendidikan Daerah',
+            subjek: 'Program Kecemerlangan Akademik',
+            status: 'Dalam Proses',
+            tindakanSiapa: 'GPKP',
+            failSurat: 'surat_002.pdf'
+        },
+        {
+            id: 3,
+            noRujukan: 'SKRP/2024/003',
+            tarikhTerima: '2024-01-17',
+            pengirim: 'Kementerian Pendidikan',
+            subjek: 'Garis Panduan Pengurusan Kewangan',
+            status: 'Selesai',
+            tindakanSiapa: 'GPKHEM',
+            failSurat: 'surat_003.pdf'
+        }
+    ];
+
+    // Sample data for Surat Keluar
+    suratKeluarData = [
+        {
+            id: 1,
+            noRujukan: 'SKRP/OUT/2024/001',
+            tarikhTerima: '2024-01-15',
+            pengirim: 'SKRP GET',
+            subjek: 'Laporan Aktiviti Sekolah Bulanan',
+            status: 'Hantar',
+            tindakanSiapa: 'Guru Besar',
+            failSurat: 'laporan_001.pdf'
+        },
+        {
+            id: 2,
+            noRujukan: 'SKRP/OUT/2024/002',
+            tarikhTerima: '2024-01-16',
+            pengirim: 'SKRP GET',
+            subjek: 'Permohonan Peruntukan Tambahan',
+            status: 'Draf',
+            tindakanSiapa: 'GPKKO',
+            failSurat: null
+        }
+    ];
+
+    loadData();
+}
+
+function loadData() {
+    if (currentTab === 'surat-masuk') {
+        renderSuratMasukTable();
+    } else {
+        renderSuratKeluarTable();
     }
 }
 
-// Tab switching function
-function showTab(tabName) {
-    // Hide all tab contents
-    const tabContents = document.querySelectorAll('.tab-content');
-    tabContents.forEach(content => {
-        content.classList.remove('active');
+// Table Rendering
+function renderSuratMasukTable() {
+    const tbody = document.getElementById('suratMasukTableBody');
+    tbody.innerHTML = '';
+
+    if (suratMasukData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8">
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h3>Tiada Surat Masuk</h3>
+                        <p>Belum ada surat masuk yang direkodkan</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    suratMasukData.forEach(surat => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${surat.noRujukan}</td>
+            <td>${formatDate(surat.tarikhTerima)}</td>
+            <td>${surat.pengirim}</td>
+            <td>${surat.subjek}</td>
+            <td><span class="status-badge status-${getStatusClass(surat.status)}">${surat.status}</span></td>
+            <td>${surat.tindakanSiapa}</td>
+            <td>
+                ${surat.failSurat ? 
+                    `<button class="btn-view" onclick="viewFile('${surat.failSurat}')">
+                        <i class="fas fa-eye"></i> Lihat
+                    </button>` :
+                    `<button class="btn-upload" onclick="openUploadModal(${surat.id})">
+                        <i class="fas fa-upload"></i> Muat Naik
+                    </button>`
+                }
+            </td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn-edit" onclick="editSurat(${surat.id})">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn-delete" onclick="deleteSurat(${surat.id})">
+                        <i class="fas fa-trash"></i> Padam
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
     });
-    
-    // Remove active class from all tab buttons
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    tabButtons.forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Show selected tab content
-    document.getElementById(tabName).classList.add('active');
-    
-    // Add active class to clicked button
-    event.target.classList.add('active');
-    
-    currentTab = tabName;
 }
 
-// Handle Surat Masuk form submission
-async function handleSuratMasukSubmit(event) {
+function renderSuratKeluarTable() {
+    const tbody = document.getElementById('suratKeluarTableBody');
+    tbody.innerHTML = '';
+
+    if (suratKeluarData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8">
+                    <div class="empty-state">
+                        <i class="fas fa-paper-plane"></i>
+                        <h3>Tiada Surat Keluar</h3>
+                        <p>Belum ada surat keluar yang direkodkan</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    suratKeluarData.forEach(surat => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${surat.noRujukan}</td>
+            <td>${formatDate(surat.tarikhTerima)}</td>
+            <td>${surat.pengirim}</td>
+            <td>${surat.subjek}</td>
+            <td><span class="status-badge status-${getStatusClass(surat.status)}">${surat.status}</span></td>
+            <td>${surat.tindakanSiapa}</td>
+            <td>
+                ${surat.failSurat ? 
+                    `<button class="btn-view" onclick="viewFile('${surat.failSurat}')">
+                        <i class="fas fa-eye"></i> Lihat
+                    </button>` :
+                    `<button class="btn-upload" onclick="openUploadModal(${surat.id})">
+                        <i class="fas fa-upload"></i> Muat Naik
+                    </button>`
+                }
+            </td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn-edit" onclick="editSurat(${surat.id})">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn-delete" onclick="deleteSurat(${surat.id})">
+                        <i class="fas fa-trash"></i> Padam
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Filtering
+function filterSuratMasuk() {
+    const searchTerm = document.getElementById('searchSuratMasuk').value.toLowerCase();
+    const statusFilter = document.getElementById('filterStatusSuratMasuk').value;
+    
+    const filteredData = suratMasukData.filter(surat => {
+        const matchesSearch = surat.noRujukan.toLowerCase().includes(searchTerm) ||
+                            surat.pengirim.toLowerCase().includes(searchTerm) ||
+                            surat.subjek.toLowerCase().includes(searchTerm);
+        const matchesStatus = !statusFilter || surat.status === statusFilter;
+        
+        return matchesSearch && matchesStatus;
+    });
+
+    renderFilteredTable('suratMasukTableBody', filteredData);
+}
+
+function filterSuratKeluar() {
+    const searchTerm = document.getElementById('searchSuratKeluar').value.toLowerCase();
+    const statusFilter = document.getElementById('filterStatusSuratKeluar').value;
+    
+    const filteredData = suratKeluarData.filter(surat => {
+        const matchesSearch = surat.noRujukan.toLowerCase().includes(searchTerm) ||
+                            surat.pengirim.toLowerCase().includes(searchTerm) ||
+                            surat.subjek.toLowerCase().includes(searchTerm);
+        const matchesStatus = !statusFilter || surat.status === statusFilter;
+        
+        return matchesSearch && matchesStatus;
+    });
+
+    renderFilteredTable('suratKeluarTableBody', filteredData);
+}
+
+function renderFilteredTable(tbodyId, data) {
+    const tbody = document.getElementById(tbodyId);
+    tbody.innerHTML = '';
+
+    if (data.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8">
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>Tiada Hasil</h3>
+                        <p>Tidak ada surat yang sepadan dengan carian anda</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    data.forEach(surat => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${surat.noRujukan}</td>
+            <td>${formatDate(surat.tarikhTerima)}</td>
+            <td>${surat.pengirim}</td>
+            <td>${surat.subjek}</td>
+            <td><span class="status-badge status-${getStatusClass(surat.status)}">${surat.status}</span></td>
+            <td>${surat.tindakanSiapa}</td>
+            <td>
+                ${surat.failSurat ? 
+                    `<button class="btn-view" onclick="viewFile('${surat.failSurat}')">
+                        <i class="fas fa-eye"></i> Lihat
+                    </button>` :
+                    `<button class="btn-upload" onclick="openUploadModal(${surat.id})">
+                        <i class="fas fa-upload"></i> Muat Naik
+                    </button>`
+                }
+            </td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn-edit" onclick="editSurat(${surat.id})">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn-delete" onclick="deleteSurat(${surat.id})">
+                        <i class="fas fa-trash"></i> Padam
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Modal Management
+function openSuratModal(type) {
+    editingSuratId = null;
+    document.getElementById('modalTitle').textContent = 'Tambah Surat Baru';
+    document.getElementById('suratForm').reset();
+    document.getElementById('suratModal').style.display = 'block';
+    
+    // Update status options based on type
+    const statusSelect = document.getElementById('status');
+    statusSelect.innerHTML = '';
+    
+    if (type === 'surat-masuk') {
+        statusSelect.innerHTML = `
+            <option value="Baru">Baru</option>
+            <option value="Dalam Proses">Dalam Proses</option>
+            <option value="Selesai">Selesai</option>
+            <option value="Tolak">Tolak</option>
+        `;
+    } else {
+        statusSelect.innerHTML = `
+            <option value="Draf">Draf</option>
+            <option value="Hantar">Hantar</option>
+            <option value="Selesai">Selesai</option>
+        `;
+    }
+}
+
+function closeModal() {
+    document.getElementById('suratModal').style.display = 'none';
+    editingSuratId = null;
+}
+
+function openUploadModal(suratId) {
+    window.currentUploadSuratId = suratId;
+    document.getElementById('uploadModal').style.display = 'block';
+}
+
+function closeUploadModal() {
+    document.getElementById('uploadModal').style.display = 'none';
+    document.getElementById('fileInput').value = '';
+    window.currentUploadSuratId = null;
+}
+
+// Form Handling
+function handleSuratSubmit(event) {
     event.preventDefault();
     
     const formData = new FormData(event.target);
-    const data = {
-        type: 'surat-masuk',
+    const suratData = {
         noRujukan: formData.get('noRujukan'),
         tarikhTerima: formData.get('tarikhTerima'),
         pengirim: formData.get('pengirim'),
         subjek: formData.get('subjek'),
         status: formData.get('status'),
         tindakanSiapa: formData.get('tindakanSiapa'),
-        tindakan: formData.get('tindakan'),
-        muatNaikSurat: formData.get('muatNaikSurat')
+        failSurat: null
     };
-    
-    try {
-        showLoading('Menyimpan surat masuk...');
-        
-        // Simulate Google Apps Script call
-        await saveToGoogleSheets(data);
-        
-        showMessage('Surat masuk berjaya disimpan!', 'success');
-        event.target.reset();
-        document.getElementById('tarikh-terima').value = new Date().toISOString().split('T')[0];
-        
-        // Reload records
-        await loadRecords();
-        
-    } catch (error) {
-        showMessage('Ralat: ' + error.message, 'error');
-    } finally {
-        hideLoading();
+
+    if (editingSuratId) {
+        // Update existing surat
+        updateSurat(editingSuratId, suratData);
+    } else {
+        // Add new surat
+        addSurat(suratData);
     }
+
+    closeModal();
 }
 
-// Handle Surat Keluar form submission
-async function handleSuratKeluarSubmit(event) {
-    event.preventDefault();
-    
-    const formData = new FormData(event.target);
-    const data = {
-        type: 'surat-keluar',
-        noRujukan: formData.get('noRujukan'),
-        tarikhHantar: formData.get('tarikhHantar'),
-        penerima: formData.get('penerima'),
-        subjek: formData.get('subjek'),
-        status: formData.get('status'),
-        tindakanSiapa: formData.get('tindakanSiapa'),
-        tindakan: formData.get('tindakan'),
-        muatNaikSurat: formData.get('muatNaikSurat')
-    };
-    
-    try {
-        showLoading('Menyimpan surat keluar...');
-        
-        // Simulate Google Apps Script call
-        await saveToGoogleSheets(data);
-        
-        showMessage('Surat keluar berjaya disimpan!', 'success');
-        event.target.reset();
-        document.getElementById('tarikh-hantar').value = new Date().toISOString().split('T')[0];
-        
-        // Reload records
-        await loadRecords();
-        
-    } catch (error) {
-        showMessage('Ralat: ' + error.message, 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-// Save data to Google Sheets (simulated)
-async function saveToGoogleSheets(data) {
-    // In a real implementation, this would call Google Apps Script
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            // Simulate success
-            if (Math.random() > 0.1) { // 90% success rate
-                resolve();
-            } else {
-                reject(new Error('Gagal menyimpan ke Google Sheets'));
-            }
-        }, 1000);
-    });
-}
-
-// Load records from Google Sheets
-async function loadRecords() {
-    try {
-        showLoading('Memuatkan senarai surat...');
-        
-        // Simulate loading from Google Sheets
-        const records = await getRecordsFromGoogleSheets();
-        currentRecords = records;
-        
-        displayRecords(records);
-        
-    } catch (error) {
-        showMessage('Ralat memuatkan senarai: ' + error.message, 'error');
-        displayRecords([]);
-    } finally {
-        hideLoading();
-    }
-}
-
-// Get records from Google Sheets (simulated)
-async function getRecordsFromGoogleSheets() {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            // Simulate sample data
-            const sampleRecords = [
-                {
-                    id: 1,
-                    type: 'surat-masuk',
-                    noRujukan: 'SM/2024/001',
-                    tarikhTerima: '2024-01-15',
-                    pengirim: 'Jabatan Pendidikan Negeri',
-                    subjek: 'Permohonan Maklumat Pelajar',
-                    status: 'Baru',
-                    tindakanSiapa: 'En. Ahmad',
-                    tindakan: 'Surat telah dihantar kepada Unit Hal Ehwal Pelajar',
-                    muatNaikSurat: 'surat_001.pdf'
-                },
-                {
-                    id: 2,
-                    type: 'surat-keluar',
-                    noRujukan: 'SK/2024/001',
-                    tarikhHantar: '2024-01-10',
-                    penerima: 'Pejabat Daerah',
-                    subjek: 'Laporan Aktiviti Bulanan',
-                    status: 'Telah Dihantar',
-                    tindakanSiapa: 'Pn. Siti',
-                    tindakan: 'Surat telah dihantar melalui pos',
-                    muatNaikSurat: 'laporan_001.pdf'
-                },
-                {
-                    id: 3,
-                    type: 'surat-masuk',
-                    noRujukan: 'SM/2024/002',
-                    tarikhTerima: '2024-01-12',
-                    pengirim: 'Kementerian Kesihatan',
-                    subjek: 'Arahan Keselamatan COVID-19',
-                    status: 'Dalam Proses',
-                    tindakanSiapa: 'Dr. Kamal',
-                    tindakan: 'Sedang menyediakan jawapan',
-                    muatNaikSurat: 'arahan_covid.pdf'
-                }
-            ];
-            resolve(sampleRecords);
-        }, 800);
-    });
-}
-
-// Display records in the UI
-function displayRecords(records) {
-    const container = document.getElementById('records-container');
-    
-    if (records.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-inbox"></i>
-                <h3>Tiada rekod surat</h3>
-                <p>Belum ada surat yang direkodkan</p>
-            </div>
-        `;
+function addSurat(suratData) {
+    // Check user permissions
+    if (!hasPermission(currentUser, 'add')) {
+        showNotification('Anda tidak mempunyai kebenaran untuk menambah surat', 'error');
         return;
     }
+
+    const newId = Math.max(...(currentTab === 'surat-masuk' ? suratMasukData : suratKeluarData).map(s => s.id), 0) + 1;
+    suratData.id = newId;
+
+    if (currentTab === 'surat-masuk') {
+        suratMasukData.push(suratData);
+    } else {
+        suratKeluarData.push(suratData);
+    }
+
+    // Save to Google Apps Script
+    saveToGoogleAppsScript(suratData, 'add');
     
-    const recordsHTML = records.map(record => createRecordCard(record)).join('');
-    container.innerHTML = recordsHTML;
-    
-    // Add click listeners to record cards
-    document.querySelectorAll('.record-card').forEach(card => {
-        card.addEventListener('click', () => showRecordDetails(card.dataset.id));
-    });
+    loadData();
+    showNotification('Surat berjaya ditambah!', 'success');
 }
 
-// Create a record card HTML
-function createRecordCard(record) {
-    const isSuratMasuk = record.type === 'surat-masuk';
-    const icon = isSuratMasuk ? 'fas fa-inbox' : 'fas fa-paper-plane';
-    const typeText = isSuratMasuk ? 'Surat Masuk' : 'Surat Keluar';
-    const contact = isSuratMasuk ? record.pengirim : record.penerima;
-    const date = isSuratMasuk ? record.tarikhTerima : record.tarikhHantar;
+function editSurat(suratId) {
+    const data = currentTab === 'surat-masuk' ? suratMasukData : suratKeluarData;
+    const surat = data.find(s => s.id === suratId);
     
-    const statusClass = record.status.toLowerCase().replace(' ', '-');
-    
-    return `
-        <div class="record-card" data-id="${record.id}">
-            <div class="record-header">
-                <div class="record-title">
-                    <i class="${icon}"></i>
-                    ${record.noRujukan} - ${typeText}
-                </div>
-                <span class="record-status status-${statusClass}">${record.status}</span>
-            </div>
-            <div class="record-details">
-                <div class="record-detail">
-                    <strong>Subjek:</strong>
-                    ${record.subjek}
-                </div>
-                <div class="record-detail">
-                    <strong>${isSuratMasuk ? 'Pengirim' : 'Penerima'}:</strong>
-                    ${contact}
-                </div>
-                <div class="record-detail">
-                    <strong>Tarikh:</strong>
-                    ${formatDate(date)}
-                </div>
-                <div class="record-detail">
-                    <strong>Tindakan:</strong>
-                    ${record.tindakanSiapa}
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// Show record details in modal
-function showRecordDetails(recordId) {
-    const record = currentRecords.find(r => r.id == recordId);
-    if (!record) return;
-    
-    const isSuratMasuk = record.type === 'surat-masuk';
-    const contact = isSuratMasuk ? record.pengirim : record.penerima;
-    const date = isSuratMasuk ? record.tarikhTerima : record.tarikhHantar;
-    const dateLabel = isSuratMasuk ? 'Tarikh Terima' : 'Tarikh Hantar';
-    
-    const modalBody = document.getElementById('modal-body');
-    modalBody.innerHTML = `
-        <h2><i class="fas ${isSuratMasuk ? 'fa-inbox' : 'fa-paper-plane'}"></i> 
-            ${record.noRujukan} - ${isSuratMasuk ? 'Surat Masuk' : 'Surat Keluar'}
-        </h2>
+    if (surat) {
+        editingSuratId = suratId;
+        document.getElementById('modalTitle').textContent = 'Edit Surat';
         
-        <div style="display: grid; gap: 15px; margin-top: 20px;">
-            <div>
-                <strong>Subjek:</strong>
-                <p>${record.subjek}</p>
-            </div>
-            
-            <div>
-                <strong>${isSuratMasuk ? 'Pengirim' : 'Penerima'}:</strong>
-                <p>${contact}</p>
-            </div>
-            
-            <div>
-                <strong>${dateLabel}:</strong>
-                <p>${formatDate(date)}</p>
-            </div>
-            
-            <div>
-                <strong>Status:</strong>
-                <p><span class="record-status status-${record.status.toLowerCase().replace(' ', '-')}">${record.status}</span></p>
-            </div>
-            
-            <div>
-                <strong>Tindakan Siapa:</strong>
-                <p>${record.tindakanSiapa}</p>
-            </div>
-            
-            ${record.muatNaikSurat ? `
-            <div>
-                <strong>Fail Lampiran:</strong>
-                <p><i class="fas fa-file"></i> ${record.muatNaikSurat}</p>
-            </div>
-            ` : ''}
-            
-            ${record.tindakan ? `
-            <div>
-                <strong>Catatan Tindakan:</strong>
-                <p>${record.tindakan}</p>
-            </div>
-            ` : ''}
-        </div>
-    `;
-    
-    document.getElementById('record-modal').style.display = 'block';
-}
-
-// Filter records based on search and status
-function filterRecords() {
-    const searchTerm = document.getElementById('search-input').value.toLowerCase();
-    const statusFilter = document.getElementById('status-filter').value;
-    
-    const filteredRecords = currentRecords.filter(record => {
-        const matchesSearch = 
-            record.noRujukan.toLowerCase().includes(searchTerm) ||
-            record.subjek.toLowerCase().includes(searchTerm) ||
-            (record.pengirim && record.pengirim.toLowerCase().includes(searchTerm)) ||
-            (record.penerima && record.penerima.toLowerCase().includes(searchTerm));
+        // Fill form with existing data
+        document.getElementById('noRujukan').value = surat.noRujukan;
+        document.getElementById('tarikhTerima').value = surat.tarikhTerima;
+        document.getElementById('pengirim').value = surat.pengirim;
+        document.getElementById('subjek').value = surat.subjek;
+        document.getElementById('status').value = surat.status;
+        document.getElementById('tindakanSiapa').value = surat.tindakanSiapa;
         
-        const matchesStatus = !statusFilter || record.status === statusFilter;
-        
-        return matchesSearch && matchesStatus;
-    });
-    
-    displayRecords(filteredRecords);
-}
-
-// Reset form
-function resetForm(formId) {
-    document.getElementById(formId).reset();
-    
-    // Reset date to today
-    if (formId === 'form-surat-masuk') {
-        document.getElementById('tarikh-terima').value = new Date().toISOString().split('T')[0];
-    } else if (formId === 'form-surat-keluar') {
-        document.getElementById('tarikh-hantar').value = new Date().toISOString().split('T')[0];
+        document.getElementById('suratModal').style.display = 'block';
     }
 }
 
-// Utility functions
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ms-MY', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-}
+function updateSurat(suratId, suratData) {
+    // Check user permissions
+    if (!hasPermission(currentUser, 'update')) {
+        showNotification('Anda tidak mempunyai kebenaran untuk mengemaskini surat', 'error');
+        return;
+    }
 
-function showLoading(message = 'Memproses...') {
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = 'loading-overlay';
-    loadingDiv.innerHTML = `
-        <div style="
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        ">
-            <div style="
-                background: white;
-                padding: 30px;
-                border-radius: 10px;
-                text-align: center;
-            ">
-                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #667eea;"></i>
-                <p style="margin-top: 15px; color: #666;">${message}</p>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(loadingDiv);
-}
-
-function hideLoading() {
-    const loadingDiv = document.getElementById('loading-overlay');
-    if (loadingDiv) {
-        loadingDiv.remove();
+    const data = currentTab === 'surat-masuk' ? suratMasukData : suratKeluarData;
+    const index = data.findIndex(s => s.id === suratId);
+    
+    if (index !== -1) {
+        suratData.id = suratId;
+        suratData.failSurat = data[index].failSurat; // Preserve existing file
+        data[index] = suratData;
+        
+        // Save to Google Apps Script
+        saveToGoogleAppsScript(suratData, 'update');
+        
+        loadData();
+        showNotification('Surat berjaya dikemaskini!', 'success');
     }
 }
 
-function showMessage(message, type = 'success') {
-    // Remove existing messages
-    const existingMessages = document.querySelectorAll('.message');
-    existingMessages.forEach(msg => msg.remove());
+function deleteSurat(suratId) {
+    // Check user permissions
+    if (!hasPermission(currentUser, 'delete')) {
+        showNotification('Anda tidak mempunyai kebenaran untuk memadamkan surat', 'error');
+        return;
+    }
+
+    if (confirm('Adakah anda pasti mahu memadamkan surat ini?')) {
+        const data = currentTab === 'surat-masuk' ? suratMasukData : suratKeluarData;
+        const surat = data.find(s => s.id === suratId);
+        
+        if (surat) {
+            // Save to Google Apps Script
+            saveToGoogleAppsScript(surat, 'delete');
+            
+            // Remove from local data
+            const index = data.findIndex(s => s.id === suratId);
+            data.splice(index, 1);
+            
+            loadData();
+            showNotification('Surat berjaya dipadamkan!', 'success');
+        }
+    }
+}
+
+// File Upload Handling
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+        handleFileUpload(file);
+    }
+}
+
+function handleDragOver(event) {
+    event.preventDefault();
+    event.currentTarget.style.borderColor = '#5a6fd8';
+    event.currentTarget.style.background = 'rgba(102, 126, 234, 0.1)';
+}
+
+function handleDrop(event) {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    if (file) {
+        handleFileUpload(file);
+    }
     
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${type}`;
-    messageDiv.textContent = message;
-    
-    // Insert at the top of the container
-    const container = document.querySelector('.container');
-    container.insertBefore(messageDiv, container.firstChild);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        messageDiv.remove();
-    }, 5000);
+    event.currentTarget.style.borderColor = '#667eea';
+    event.currentTarget.style.background = 'transparent';
 }
 
-// Google Apps Script Integration Functions
-// These functions would be called by Google Apps Script
+function handleFileUpload(file) {
+    // Validate file using config
+    const validation = validateFile(file);
+    if (!validation.valid) {
+        showNotification(validation.message, 'error');
+        return;
+    }
 
-function saveSuratMasuk(data) {
-    // This function would be called by Google Apps Script
-    console.log('Saving surat masuk:', data);
-    return true;
+    // Upload to Google Apps Script
+    uploadFileToGoogleAppsScript(file);
 }
 
-function saveSuratKeluar(data) {
-    // This function would be called by Google Apps Script
-    console.log('Saving surat keluar:', data);
-    return true;
+function uploadFileToGoogleAppsScript(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('suratId', window.currentUploadSuratId);
+    formData.append('action', 'upload');
+
+    // Show loading state
+    const uploadBtn = document.querySelector('.upload-actions .btn-primary');
+    const originalText = uploadBtn.innerHTML;
+    uploadBtn.innerHTML = '<span class="loading"></span> Memuat Naik...';
+    uploadBtn.disabled = true;
+
+    fetch(GOOGLE_APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update local data
+            const dataArray = currentTab === 'surat-masuk' ? suratMasukData : suratKeluarData;
+            const surat = dataArray.find(s => s.id === window.currentUploadSuratId);
+            if (surat) {
+                surat.failSurat = data.filename;
+                loadData();
+                showNotification('Fail berjaya dimuat naik!', 'success');
+                closeUploadModal();
+            }
+        } else {
+            showNotification('Gagal memuat naik fail: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Upload error:', error);
+        showNotification('Ralat semasa memuat naik fail', 'error');
+    })
+    .finally(() => {
+        uploadBtn.innerHTML = originalText;
+        uploadBtn.disabled = false;
+    });
 }
 
-function getSuratRecords() {
-    // This function would return records from Google Sheets
-    return currentRecords;
-}
-
-// Export functions for Google Apps Script
-if (typeof google !== 'undefined' && google.script) {
-    google.script.run = {
-        saveSuratMasuk: saveSuratMasuk,
-        saveSuratKeluar: saveSuratKeluar,
-        getSuratRecords: getSuratRecords
+// Google Apps Script Integration
+function saveToGoogleAppsScript(suratData, action) {
+    const payload = {
+        action: action,
+        suratType: currentTab,
+        suratData: suratData,
+        user: currentUser,
+        timestamp: new Date().toISOString()
     };
-} 
+
+    fetch(GOOGLE_APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            console.error('Google Apps Script error:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving to Google Apps Script:', error);
+    });
+}
+
+// Utility Functions
+function formatDate(dateString) {
+    const d = new Date(dateString);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    
+    return `${day}/${month}/${year}`;
+}
+
+function getStatusClass(status) {
+    return status.toLowerCase().replace(' ', '-');
+}
+
+function viewFile(filename) {
+    // Open file in new tab (assuming files are stored in Google Drive)
+    const fileUrl = `https://drive.google.com/file/d/${filename}/view`;
+    window.open(fileUrl, '_blank');
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
+    `;
+
+    // Add styles
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#00b894' : type === 'error' ? '#ff4757' : '#667eea'};
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        animation: slideIn 0.3s ease;
+    `;
+
+    document.body.appendChild(notification);
+
+    // Remove after configured duration
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, CONFIG.UI_CONFIG.notificationDuration);
+}
+
+function logout() {
+    if (confirm('Adakah anda pasti mahu log keluar?')) {
+        // Clear any stored data
+        localStorage.clear();
+        // Redirect to login page or show login form
+        alert('Anda telah log keluar. Sila log masuk semula.');
+        location.reload();
+    }
+}
+
+// Add CSS animations for notifications
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
